@@ -1,0 +1,36 @@
+// server.js (CipherLink Backend - MVP) const express = require("express"); const http = require("http"); const WebSocket = require("ws"); const cors = require("cors"); require("dotenv\config");
+
+const app = express(); app.use(cors()); app.use(express.json());
+
+const server = http.createServer(app); const wss = new WebSocket.Server({ server });
+
+const clients = new Map();
+
+wss.on("connection", (ws) => { console.log("Client connected");
+
+ws.on("message", (data) => { const message = JSON.parse(data);
+
+if (message.type === "auth") {
+  // In production, verify token
+  clients.set(message.userId, ws);
+}
+
+if (message.type === "chat") {
+  const target = clients.get(message.to);
+  if (target) {
+    target.send(JSON.stringify({
+      from: message.from,
+      text: message.text,
+      timestamp: Date.now(),
+    }));
+  }
+}
+
+});
+
+ws.on("close", () => { console.log("Client disconnected"); for (let [userId, socket] of clients) { if (socket === ws) { clients.delete(userId); break; } } }); });
+
+// Simple ping app.get("/ping", (req, res) => { res.send("CipherLink server is live"); });
+
+const PORT = process.env.PORT || 8080; server.listen(PORT, () => console.log(Server running on port ${PORT}));
+
