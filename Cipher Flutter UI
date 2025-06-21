@@ -1,0 +1,20 @@
+// main.dart (CipherLink Flutter Chat UI - MVP) import 'package:flutter/material.dart'; import 'package:web_socket_channel/io.dart'; import 'package:web_socket_channel/web_socket_channel.dart';
+
+void main() => runApp(CipherLinkApp());
+
+class CipherLinkApp extends StatelessWidget { @override Widget build(BuildContext context) { return MaterialApp( title: 'CipherLink', home: ChatScreen( channel: IOWebSocketChannel.connect('ws://localhost:8080'), ), ); } }
+
+class ChatScreen extends StatefulWidget { final WebSocketChannel channel; ChatScreen({required this.channel});
+
+@override _ChatScreenState createState() => _ChatScreenState(); }
+
+class _ChatScreenState extends State<ChatScreen> { final TextEditingController _controller = TextEditingController(); final List<String> _messages = [];
+
+@override void initState() { super.initState(); widget.channel.stream.listen((message) { setState(() => _messages.add(message)); }); }
+
+void _sendMessage() { if (_controller.text.isNotEmpty) { widget.channel.sink.add( '{"type": "chat", "from": "user1", "to": "user2", "text": "${_controller.text}"}' ); _controller.clear(); } }
+
+@override Widget build(BuildContext context) { return Scaffold( appBar: AppBar(title: Text('CipherLink Chat')), body: Column( children: [ Expanded( child: ListView.builder( itemCount: _messages.length, itemBuilder: (context, index) => ListTile( title: Text(_messages[index]), ), ), ), Padding( padding: EdgeInsets.all(8.0), child: Row( children: [ Expanded( child: TextField( controller: _controller, decoration: InputDecoration(hintText: 'Send a message'), ), ), IconButton( icon: Icon(Icons.send), onPressed: _sendMessage, ), ], ), ), ], ), ); }
+
+@override void dispose() { widget.channel.sink.close(); super.dispose(); } }
+
